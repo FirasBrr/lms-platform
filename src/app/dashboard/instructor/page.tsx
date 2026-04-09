@@ -15,10 +15,12 @@ interface User {
 interface Course {
   _id: string;
   title: string;
+  description: string;
   students: number;
   rating: number;
   status: string;
   enrolledStudents?: string[];
+  createdAt: string;
 }
 
 export default function InstructorDashboard() {
@@ -48,7 +50,7 @@ export default function InstructorDashboard() {
 
   const fetchCourses = async (token: string) => {
     try {
-      const res = await fetch('/api/courses?instructor=true', {
+      const res = await fetch('/api/instructor/courses', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -66,121 +68,294 @@ export default function InstructorDashboard() {
 
   const totalStudents = courses.reduce((acc, c) => acc + (c.enrolledStudents?.length || 0), 0);
   const publishedCourses = courses.filter(c => c.status === 'published').length;
-  const avgRating = (courses.reduce((acc, c) => acc + (c.rating || 0), 0) / (publishedCourses || 1)).toFixed(1);
+  const draftCourses = courses.filter(c => c.status === 'draft').length;
+  const pendingCourses = courses.filter(c => c.status === 'pending').length;
+  const avgRating = courses.length > 0 
+    ? (courses.reduce((acc, c) => acc + (c.rating || 0), 0) / courses.length).toFixed(1)
+    : '0';
 
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', padding: '50px' }}>
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
+      <DashboardLayout user={user}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+          <div style={{ width: '48px', height: '48px', border: '3px solid #e2e8f0', borderTopColor: '#4f46e5', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
     <DashboardLayout user={user}>
-      <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-          <div>
-            <h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px' }}>
-              Instructor Dashboard
-            </h1>
-            <p style={{ color: '#6b7280' }}>Welcome back, {user?.name}!</p>
-          </div>
-          <Link 
-            href="/instructor/courses/create"
-            style={{ 
-              padding: '10px 20px', 
-              background: '#4f46e5', 
-              color: 'white', 
-              borderRadius: '8px',
-              textDecoration: 'none'
-            }}
-          >
-            + Create New Course
-          </Link>
+      <div>
+        {/* Welcome Section */}
+        <div style={{ marginBottom: '32px' }}>
+          <h1 style={{ fontSize: '28px', fontWeight: 'bold', color: '#1e293b', marginBottom: '8px' }}>
+            Welcome back, {user?.name}! 👋
+          </h1>
+          <p style={{ color: '#64748b', fontSize: '16px' }}>
+            Here's what's happening with your courses today.
+          </p>
         </div>
 
-        {/* Stats */}
+        {/* Stats Grid */}
         <div style={{ 
           display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', 
           gap: '20px',
           marginBottom: '32px'
         }}>
-          <div style={{ background: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-            <div style={{ fontSize: '28px', marginBottom: '8px' }}>📚</div>
-            <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{courses.length}</div>
-            <div style={{ color: '#6b7280' }}>Total Courses</div>
+          <div style={{ 
+            background: 'white', 
+            padding: '24px', 
+            borderRadius: '16px', 
+            border: '1px solid #e2e8f0',
+            transition: 'all 0.2s',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <span style={{ fontSize: '32px' }}>📚</span>
+              <span style={{ fontSize: '24px', fontWeight: 'bold', color: '#4f46e5' }}>{courses.length}</span>
+            </div>
+            <h3 style={{ fontSize: '14px', fontWeight: '500', color: '#64748b', margin: 0 }}>Total Courses</h3>
           </div>
           
-          <div style={{ background: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-            <div style={{ fontSize: '28px', marginBottom: '8px' }}>✅</div>
-            <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{publishedCourses}</div>
-            <div style={{ color: '#6b7280' }}>Published Courses</div>
+          <div style={{ 
+            background: 'white', 
+            padding: '24px', 
+            borderRadius: '16px', 
+            border: '1px solid #e2e8f0',
+            transition: 'all 0.2s',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <span style={{ fontSize: '32px' }}>✅</span>
+              <span style={{ fontSize: '24px', fontWeight: 'bold', color: '#10b981' }}>{publishedCourses}</span>
+            </div>
+            <h3 style={{ fontSize: '14px', fontWeight: '500', color: '#64748b', margin: 0 }}>Published Courses</h3>
           </div>
           
-          <div style={{ background: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-            <div style={{ fontSize: '28px', marginBottom: '8px' }}>👥</div>
-            <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{totalStudents.toLocaleString()}</div>
-            <div style={{ color: '#6b7280' }}>Total Students</div>
+          <div style={{ 
+            background: 'white', 
+            padding: '24px', 
+            borderRadius: '16px', 
+            border: '1px solid #e2e8f0',
+            transition: 'all 0.2s',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <span style={{ fontSize: '32px' }}>📝</span>
+              <span style={{ fontSize: '24px', fontWeight: 'bold', color: '#f59e0b' }}>{draftCourses}</span>
+            </div>
+            <h3 style={{ fontSize: '14px', fontWeight: '500', color: '#64748b', margin: 0 }}>Draft Courses</h3>
           </div>
           
-          <div style={{ background: 'white', padding: '20px', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
-            <div style={{ fontSize: '28px', marginBottom: '8px' }}>⭐</div>
-            <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{avgRating || '—'}</div>
-            <div style={{ color: '#6b7280' }}>Average Rating</div>
+          <div style={{ 
+            background: 'white', 
+            padding: '24px', 
+            borderRadius: '16px', 
+            border: '1px solid #e2e8f0',
+            transition: 'all 0.2s',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <span style={{ fontSize: '32px' }}>⏳</span>
+              <span style={{ fontSize: '24px', fontWeight: 'bold', color: '#8b5cf6' }}>{pendingCourses}</span>
+            </div>
+            <h3 style={{ fontSize: '14px', fontWeight: '500', color: '#64748b', margin: 0 }}>Pending Review</h3>
           </div>
         </div>
 
-        {/* Courses Table */}
-        <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '16px' }}>Your Courses</h2>
-        <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-              <tr>
-                <th style={{ padding: '12px', textAlign: 'left' }}>Course</th>
-                <th style={{ padding: '12px', textAlign: 'left' }}>Students</th>
-                <th style={{ padding: '12px', textAlign: 'left' }}>Rating</th>
-                <th style={{ padding: '12px', textAlign: 'left' }}>Status</th>
-                <th style={{ padding: '12px', textAlign: 'left' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {courses.length === 0 ? (
-                <tr>
-                  <td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: '#6b7280' }}>
-                    No courses yet. Click "Create New Course" to get started!
-                  </td>
-                </tr>
-              ) : (
-                courses.map((course) => (
-                  <tr key={course._id} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                    <td style={{ padding: '12px', fontWeight: '500' }}>{course.title}</td>
-                    <td style={{ padding: '12px' }}>{course.enrolledStudents?.length || 0}</td>
-                    <td style={{ padding: '12px' }}>{course.rating || '—'} ★</td>
-                    <td style={{ padding: '12px' }}>
-                      <span style={{ 
-                        padding: '2px 8px', 
-                        borderRadius: '12px', 
-                        fontSize: '12px',
-                        background: course.status === 'published' ? '#d1fae5' : course.status === 'pending' ? '#fef3c7' : '#f3f4f6',
-                        color: course.status === 'published' ? '#065f46' : course.status === 'pending' ? '#92400e' : '#6b7280'
-                      }}>
-                        {course.status === 'published' ? 'Published' : course.status === 'pending' ? 'Pending Review' : 'Draft'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '12px' }}>
-                      <Link href={`/instructor/courses/${course._id}/edit`} style={{ color: '#4f46e5', textDecoration: 'none' }}>
-                        Edit
-                      </Link>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        {/* Second Row Stats */}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', 
+          gap: '20px',
+          marginBottom: '32px'
+        }}>
+          <div style={{ 
+            background: 'white', 
+            padding: '24px', 
+            borderRadius: '16px', 
+            border: '1px solid #e2e8f0',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <span style={{ fontSize: '32px' }}>👥</span>
+              <span style={{ fontSize: '24px', fontWeight: 'bold', color: '#4f46e5' }}>{totalStudents.toLocaleString()}</span>
+            </div>
+            <h3 style={{ fontSize: '14px', fontWeight: '500', color: '#64748b', margin: 0 }}>Total Students</h3>
+          </div>
+          
+          <div style={{ 
+            background: 'white', 
+            padding: '24px', 
+            borderRadius: '16px', 
+            border: '1px solid #e2e8f0',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <span style={{ fontSize: '32px' }}>⭐</span>
+              <span style={{ fontSize: '24px', fontWeight: 'bold', color: '#f59e0b' }}>{avgRating}</span>
+            </div>
+            <h3 style={{ fontSize: '14px', fontWeight: '500', color: '#64748b', margin: 0 }}>Average Rating</h3>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div style={{ display: 'flex', gap: '16px', marginBottom: '32px', flexWrap: 'wrap' }}>
+          <Link
+            href="/instructor/courses/create"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 20px',
+              background: '#4f46e5',
+              color: 'white',
+              borderRadius: '10px',
+              textDecoration: 'none',
+              fontSize: '14px',
+              fontWeight: '500',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = '#4338ca'}
+            onMouseLeave={(e) => e.currentTarget.style.background = '#4f46e5'}
+          >
+            <span>➕</span> Create New Course
+          </Link>
+          <Link
+            href="/instructor/courses"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 20px',
+              background: 'white',
+              color: '#475569',
+              borderRadius: '10px',
+              textDecoration: 'none',
+              fontSize: '14px',
+              fontWeight: '500',
+              border: '1px solid #e2e8f0',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#f8fafc';
+              e.currentTarget.style.borderColor = '#cbd5e1';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'white';
+              e.currentTarget.style.borderColor = '#e2e8f0';
+            }}
+          >
+            <span>📋</span> Manage All Courses
+          </Link>
+        </div>
+
+        {/* Recent Courses Section */}
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h2 style={{ fontSize: '20px', fontWeight: 'bold', color: '#1e293b' }}>Recent Courses</h2>
+            {courses.length > 0 && (
+              <Link href="/instructor/courses" style={{ color: '#4f46e5', textDecoration: 'none', fontSize: '14px', fontWeight: '500' }}>
+                View all →
+              </Link>
+            )}
+          </div>
+
+          {courses.length === 0 ? (
+            <div style={{ 
+              textAlign: 'center', 
+              padding: '60px', 
+              background: 'white', 
+              borderRadius: '16px', 
+              border: '1px solid #e2e8f0' 
+            }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>📚</div>
+              <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1e293b', marginBottom: '8px' }}>No courses yet</h3>
+              <p style={{ color: '#64748b', marginBottom: '24px' }}>Create your first course and start teaching!</p>
+              <Link 
+                href="/instructor/courses/create"
+                style={{ 
+                  padding: '10px 24px', 
+                  background: '#4f46e5', 
+                  color: 'white', 
+                  borderRadius: '10px',
+                  textDecoration: 'none',
+                  display: 'inline-block'
+                }}
+              >
+                Create Course
+              </Link>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gap: '16px' }}>
+              {courses.slice(0, 5).map((course) => (
+                <div 
+                  key={course._id} 
+                  style={{ 
+                    background: 'white', 
+                    borderRadius: '12px', 
+                    border: '1px solid #e2e8f0',
+                    padding: '20px',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)';
+                    e.currentTarget.style.borderColor = '#cbd5e1';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = 'none';
+                    e.currentTarget.style.borderColor = '#e2e8f0';
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                        <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#1e293b', margin: 0 }}>{course.title}</h3>
+                        <span style={{ 
+                          padding: '2px 8px', 
+                          borderRadius: '20px', 
+                          fontSize: '11px',
+                          background: course.status === 'published' ? '#d1fae5' : course.status === 'pending' ? '#fef3c7' : '#f1f5f9',
+                          color: course.status === 'published' ? '#065f46' : course.status === 'pending' ? '#92400e' : '#64748b'
+                        }}>
+                          {course.status === 'published' ? 'Published' : course.status === 'pending' ? 'Pending' : 'Draft'}
+                        </span>
+                      </div>
+                      <p style={{ color: '#64748b', fontSize: '13px', marginBottom: '12px' }}>
+                        {course.description?.substring(0, 100)}...
+                      </p>
+                      <div style={{ display: 'flex', gap: '20px', fontSize: '13px', color: '#64748b' }}>
+                        <span>👥 {course.enrolledStudents?.length || 0} students</span>
+                        <span>⭐ {course.rating || 'No ratings'}</span>
+                        <span>📅 {new Date(course.createdAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                    <Link 
+                      href={`/instructor/courses/${course._id}/edit`}
+                      style={{ 
+                        padding: '6px 16px', 
+                        background: '#f1f5f9', 
+                        color: '#475569', 
+                        borderRadius: '8px',
+                        textDecoration: 'none',
+                        fontSize: '13px',
+                        fontWeight: '500',
+                        transition: 'all 0.2s',
+                        whiteSpace: 'nowrap'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#4f46e5';
+                        e.currentTarget.style.color = 'white';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = '#f1f5f9';
+                        e.currentTarget.style.color = '#475569';
+                      }}
+                    >
+                      Edit Course →
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </DashboardLayout>

@@ -11,6 +11,18 @@ export default function Footer() {
   if (pathname?.startsWith('/dashboard')) {
     return null;
   }
+   if (pathname?.startsWith('/instructor')) {
+    return null;
+  }
+if (pathname?.startsWith('/admin')) {
+    return null;
+  }
+  if (pathname?.startsWith('/student')) {
+    return null;
+  }
+ if (pathname?.startsWith('/courses')) {
+    return null;
+  }
 
   return (
     <footer className="footer">

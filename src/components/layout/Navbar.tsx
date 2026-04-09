@@ -18,6 +18,19 @@ export default function NavigationBar() {
   if (pathname?.startsWith('/dashboard')) {
     return null;
   }
+  if (pathname?.startsWith('/instructor')) {
+    return null;
+  }
+  if (pathname?.startsWith('/admin')) {
+    return null;
+  }
+  if (pathname?.startsWith('/student')) {
+    return null;
+  }
+  if (pathname?.startsWith('/courses')) {
+    return null;
+  }
+
 
   // Rest of your navbar code...
   useEffect(() => {

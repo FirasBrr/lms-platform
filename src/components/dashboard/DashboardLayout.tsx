@@ -18,15 +18,32 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children, user }: DashboardLayoutProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
 
-  // Navigation items based on role
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+      if (window.innerWidth < 768) {
+        setSidebarOpen(false);
+      } else {
+        setSidebarOpen(true);
+      }
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   const getNavItems = () => {
     if (user?.role === 'student') {
       return [
-        { href: '/dashboard/student', icon: '📊', label: 'Overview' },
+        { href: '/dashboard/student', icon: '🏠', label: 'Overview' },
         { href: '/my-courses', icon: '📚', label: 'My Courses' },
-        { href: '/my-progress', icon: '📈', label: 'My Progress' },
+        { href: '/my-progress', icon: '📈', label: 'Progress' },
+        { href: '/certificates', icon: '🎓', label: 'Certificates' },
         { href: '/profile', icon: '👤', label: 'Profile' },
         { href: '/settings', icon: '⚙️', label: 'Settings' },
       ];
@@ -34,10 +51,10 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
 
     if (user?.role === 'instructor') {
       return [
-        { href: '/dashboard/instructor', icon: '📊', label: 'Overview' },
+        { href: '/dashboard/instructor', icon: '🏠', label: 'Overview' },
         { href: '/instructor/courses', icon: '✏️', label: 'My Courses' },
-        { href: '/instructor/students', icon: '👥', label: 'My Students' },
-        { href: '/instructor/earnings', icon: '💰', label: 'Earnings' },
+        { href: '/instructor/courses/create', icon: '➕', label: 'Create Course' },
+        { href: '/instructor/students', icon: '👥', label: 'Students' },
         { href: '/profile', icon: '👤', label: 'Profile' },
         { href: '/settings', icon: '⚙️', label: 'Settings' },
       ];
@@ -45,10 +62,11 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
 
     if (user?.role === 'admin') {
       return [
-        { href: '/dashboard/admin', icon: '📊', label: 'Overview' },
+        { href: '/dashboard/admin', icon: '🏠', label: 'Overview' },
         { href: '/admin/users', icon: '👥', label: 'Users' },
         { href: '/admin/courses', icon: '📚', label: 'Courses' },
-        { href: '/admin/reports', icon: '📊', label: 'Reports' },
+        { href: '/admin/pending', icon: '⏳', label: 'Pending Reviews' },
+        { href: '/admin/analytics', icon: '📊', label: 'Analytics' },
         { href: '/profile', icon: '👤', label: 'Profile' },
         { href: '/settings', icon: '⚙️', label: 'Settings' },
       ];
@@ -62,111 +80,131 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
   const handleLogout = () => {
     localStorage.clear();
     sessionStorage.clear();
-    window.location.href = '/login';
+    router.push('/login');
+  };
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#f9fafb' }}>
-      {/* Sidebar */}
-      <div
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc' }}>
+      {/* Overlay for mobile */}
+      {isMobile && sidebarOpen && (
+        <div
+          onClick={toggleSidebar}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.5)',
+            zIndex: 998,
+          }}
+        />
+      )}
+
+      {/* Sidebar - Light Theme */}
+      <aside
         style={{
-          width: sidebarOpen ? '260px' : '70px',
+          width: sidebarOpen ? '280px' : '80px',
           background: 'white',
-          borderRight: '1px solid #e5e7eb',
-          transition: 'width 0.3s ease',
+          borderRight: '1px solid #e2e8f0',
+          transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           position: 'fixed',
           top: 0,
           left: 0,
           bottom: 0,
-          zIndex: 100,
+          zIndex: 999,
           overflowX: 'hidden',
+          boxShadow: '2px 0 8px rgba(0,0,0,0.04)',
         }}
       >
-        <div style={{ padding: '20px' }}>
-          {/* Toggle Button */}
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '20px',
-              cursor: 'pointer',
-              marginBottom: '24px',
-              padding: '8px',
-              borderRadius: '8px',
-            }}
-          >
-            {sidebarOpen ? '◀' : '▶'}
-          </button>
-
-          {/* Logo */}
-          {sidebarOpen && (
-            <Link
-              href="/"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                textDecoration: 'none',
-                marginBottom: '32px',
-              }}
-            >
-              <div
-                style={{
-                  width: '32px',
-                  height: '32px',
-                  background: '#4f46e5',
-                  borderRadius: '8px',
+        <div style={{ padding: '24px 16px', height: '100%', display: 'flex', flexDirection: 'column' }}>
+          {/* Logo Section */}
+          <div style={{ marginBottom: '32px', display: 'flex', alignItems: 'center', justifyContent: sidebarOpen ? 'space-between' : 'center' }}>
+            {sidebarOpen && (
+              <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none' }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  background: 'linear-gradient(135deg, #4f46e5, #06b6d4)',
+                  borderRadius: '12px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: 'white',
-                }}
-              >
-                L
-              </div>
-              <span style={{ fontWeight: 'bold', color: '#1f2937' }}>LMS Platform</span>
-            </Link>
-          )}
+                  fontSize: '20px'
+                }}>
+                  🎓
+                </div>
+                <span style={{ fontWeight: 'bold', fontSize: '18px', color: '#1e293b' }}>LMS Platform</span>
+              </Link>
+            )}
+            <button
+              onClick={toggleSidebar}
+              style={{
+                background: '#f1f5f9',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '8px',
+                cursor: 'pointer',
+                color: '#64748b',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#e2e8f0'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#f1f5f9'}
+            >
+              {sidebarOpen ? '◀' : '▶'}
+            </button>
+          </div>
 
-          {/* User Info */}
+          {/* User Profile Section - Light */}
           {sidebarOpen && user && (
             <div
               style={{
-                padding: '12px',
-                background: '#f3f4f6',
-                borderRadius: '12px',
-                marginBottom: '24px',
+                background: '#f8fafc',
+                borderRadius: '16px',
+                padding: '16px',
+                marginBottom: '32px',
+                border: '1px solid #e2e8f0',
               }}
             >
-              <div
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  background: '#4f46e5',
-                  borderRadius: '10px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                  fontWeight: 'bold',
-                  marginBottom: '8px',
-                }}
-              >
-                {user.name?.charAt(0) || 'U'}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                <div
+                  style={{
+                    width: '48px',
+                    height: '48px',
+                    background: 'linear-gradient(135deg, #4f46e5, #06b6d4)',
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '20px',
+                    fontWeight: 'bold',
+                    color: 'white',
+                  }}
+                >
+                  {user.name?.charAt(0).toUpperCase() || 'U'}
+                </div>
+                <div>
+                  <div style={{ fontWeight: '600', color: '#1e293b', fontSize: '14px' }}>{user.name}</div>
+                  <div style={{ fontSize: '11px', color: '#64748b' }}>{user.email}</div>
+                </div>
               </div>
-              <div style={{ fontWeight: '600', fontSize: '14px' }}>{user.name}</div>
-              <div style={{ fontSize: '12px', color: '#6b7280' }}>{user.email}</div>
               <div
                 style={{
-                  marginTop: '6px',
-                  padding: '2px 8px',
-                  background: '#e0e7ff',
-                  color: '#4f46e5',
-                  borderRadius: '4px',
-                  fontSize: '10px',
                   display: 'inline-block',
+                  padding: '4px 12px',
+                  background: '#e0e7ff',
+                  borderRadius: '20px',
+                  fontSize: '11px',
+                  color: '#4f46e5',
                   textTransform: 'capitalize',
+                  fontWeight: '500',
                 }}
               >
                 {user.role}
@@ -174,32 +212,56 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
             </div>
           )}
 
-          {/* Navigation */}
-          <nav>
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '10px 12px',
-                  borderRadius: '8px',
-                  textDecoration: 'none',
-                  color: pathname === item.href ? '#4f46e5' : '#4b5563',
-                  background: pathname === item.href ? '#e0e7ff' : 'transparent',
-                  marginBottom: '4px',
-                  fontSize: '14px',
-                }}
-              >
-                <span style={{ fontSize: '18px' }}>{item.icon}</span>
-                {sidebarOpen && <span>{item.label}</span>}
-              </Link>
-            ))}
+          {/* Navigation - Light */}
+          <nav style={{ flex: 1 }}>
+            <div style={{ marginBottom: '24px' }}>
+              {sidebarOpen && (
+                <p style={{ fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#94a3b8', marginBottom: '12px', paddingLeft: '12px' }}>
+                  MAIN MENU
+                </p>
+              )}
+              {navItems.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '10px 12px',
+                      borderRadius: '10px',
+                      textDecoration: 'none',
+                      color: isActive ? '#4f46e5' : '#475569',
+                      background: isActive ? '#e0e7ff' : 'transparent',
+                      marginBottom: '4px',
+                      fontSize: '14px',
+                      fontWeight: isActive ? '500' : '400',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.background = '#f1f5f9';
+                        e.currentTarget.style.color = '#1e293b';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isActive) {
+                        e.currentTarget.style.background = 'transparent';
+                        e.currentTarget.style.color = '#475569';
+                      }
+                    }}
+                  >
+                    <span style={{ fontSize: '20px' }}>{item.icon}</span>
+                    {sidebarOpen && <span>{item.label}</span>}
+                  </Link>
+                );
+              })}
+            </div>
           </nav>
 
-          {/* Logout */}
+          {/* Logout Button - Light */}
           <button
             onClick={handleLogout}
             style={{
@@ -207,37 +269,48 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
               alignItems: 'center',
               gap: '12px',
               padding: '10px 12px',
-              borderRadius: '8px',
+              borderRadius: '10px',
               width: '100%',
-              border: 'none',
-              background: 'transparent',
+              border: '1px solid #fee2e2',
+              background: '#fef2f2',
               color: '#dc2626',
               cursor: 'pointer',
-              marginTop: '24px',
               fontSize: '14px',
+              fontWeight: '500',
+              transition: 'all 0.2s',
+              marginTop: 'auto',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#fee2e2';
+              e.currentTarget.style.borderColor = '#fecaca';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = '#fef2f2';
+              e.currentTarget.style.borderColor = '#fee2e2';
             }}
           >
-            <span style={{ fontSize: '18px' }}>🚪</span>
+            <span style={{ fontSize: '20px' }}>🚪</span>
             {sidebarOpen && <span>Logout</span>}
           </button>
         </div>
-      </div>
+      </aside>
 
       {/* Main Content */}
-      <div
+      <main
         style={{
-          marginLeft: sidebarOpen ? '260px' : '70px',
+          marginLeft: sidebarOpen ? '280px' : '80px',
           flex: 1,
-          transition: 'margin-left 0.3s ease',
+          transition: 'margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           width: '100%',
+          minHeight: '100vh',
         }}
       >
-        {/* Top Bar */}
+        {/* Top Navigation Bar */}
         <div
           style={{
             background: 'white',
-            borderBottom: '1px solid #e5e7eb',
-            padding: '16px 24px',
+            borderBottom: '1px solid #e2e8f0',
+            padding: '16px 32px',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
@@ -247,25 +320,48 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
           }}
         >
           <div>
-            <h1 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0 }}>
+            <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1e293b', margin: 0 }}>
               {user?.role === 'student' && 'Student Dashboard'}
               {user?.role === 'instructor' && 'Instructor Dashboard'}
               {user?.role === 'admin' && 'Admin Dashboard'}
             </h1>
           </div>
-          <div style={{ fontSize: '14px', color: '#6b7280' }}>
-            {new Date().toLocaleDateString('en-US', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            })}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+            <div style={{ fontSize: '14px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>📅</span>
+              {new Date().toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}
+            </div>
+            <button
+              style={{
+                background: '#f1f5f9',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '8px 12px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                color: '#475569',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#e2e8f0'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#f1f5f9'}
+            >
+              <span>🔔</span>
+              <span style={{ fontSize: '12px' }}>Notifications</span>
+            </button>
           </div>
         </div>
 
         {/* Page Content */}
-        <div style={{ padding: '24px' }}>{children}</div>
-      </div>
+        <div style={{ padding: '32px' }}>{children}</div>
+      </main>
     </div>
   );
 }
