@@ -5,7 +5,10 @@ const LessonSchema = new Schema({
     type: String, 
     required: true 
   },
-  description: String,
+  description: { 
+    type: String, 
+    default: '' 
+  },
   type: { 
     type: String, 
     enum: ['video', 'pdf', 'text'], 
@@ -14,28 +17,31 @@ const LessonSchema = new Schema({
   content: { 
     type: String, 
     required: true 
-  }, // YouTube URL, PDF link, or text content
-  duration: Number, // in minutes
-  order: { 
+  },
+  duration: { 
     type: Number, 
     default: 0 
   },
-  isCompleted: { 
-    type: Boolean, 
-    default: false 
+  order: { 
+    type: Number, 
+    default: 0 
   }
 });
 
 const CourseSchema = new Schema({
   title: { 
     type: String, 
-    required: [true, 'Course title is required'],
+    required: true,
     trim: true 
   },
   description: { 
     type: String, 
-    required: [true, 'Description is required'] 
+    required: true 
   },
+  thumbnail: { 
+    type: String, 
+    default: '' 
+  },  // ADD THIS FIELD
   category: { 
     type: String, 
     required: true,
@@ -46,16 +52,14 @@ const CourseSchema = new Schema({
     enum: ['Beginner', 'Intermediate', 'Advanced'],
     default: 'Beginner'
   },
-  thumbnail: { 
-    type: String, 
-    default: '' 
-  },
   instructor: { 
     type: Schema.Types.ObjectId, 
     ref: 'User', 
     required: true 
   },
   lessons: [LessonSchema],
+  whatYouWillLearn: [String],
+  requirements: [String],
   status: { 
     type: String, 
     enum: ['draft', 'pending', 'published', 'rejected'], 
@@ -69,13 +73,6 @@ const CourseSchema = new Schema({
     type: Number, 
     default: 0 
   },
-  totalRatings: { 
-    type: Number, 
-    default: 0 
-  },
-  tags: [String],
-  requirements: [String],
-  whatYouWillLearn: [String],
   createdAt: { 
     type: Date, 
     default: Date.now 

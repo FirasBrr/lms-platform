@@ -10,13 +10,13 @@ interface Course {
   description: string;
   category: string;
   level: string;
+  thumbnail: string;
   instructor: {
     name: string;
     email: string;
   };
   rating: number;
   enrolledStudents: string[];
-  thumbnail: string;
   createdAt: string;
 }
 
@@ -92,17 +92,30 @@ export default function CoursesPage() {
         body: JSON.stringify({ courseId })
       });
 
+      const data = await res.json();
+
       if (res.ok) {
         alert('Successfully enrolled in course!');
         fetchCourses();
       } else {
-        const data = await res.json();
         alert(data.error || 'Failed to enroll');
       }
     } catch (error) {
       console.error('Error enrolling:', error);
       alert('Something went wrong');
     }
+  };
+
+  const getCategoryIcon = (category: string): string => {
+    const icons: { [key: string]: string } = {
+      'Programming': '💻',
+      'Design': '🎨',
+      'Business': '💼',
+      'Marketing': '📢',
+      'Data Science': '📊',
+      'AI/ML': '🤖'
+    };
+    return icons[category] || '📚';
   };
 
   return (
@@ -119,8 +132,7 @@ export default function CoursesPage() {
 
       {/* Search and Filters */}
       <div style={{ marginBottom: '32px' }}>
-        {/* Search Bar */}
-        <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
           <input
             type="text"
             placeholder="Search for courses..."
@@ -129,6 +141,7 @@ export default function CoursesPage() {
             onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
             style={{
               flex: 1,
+              minWidth: '200px',
               padding: '12px 16px',
               border: '1px solid #e5e7eb',
               borderRadius: '12px',
@@ -151,7 +164,6 @@ export default function CoursesPage() {
           </button>
         </div>
 
-        {/* Filters */}
         <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
           <select
             value={selectedCategory}
@@ -160,7 +172,8 @@ export default function CoursesPage() {
               padding: '8px 16px',
               border: '1px solid #e5e7eb',
               borderRadius: '8px',
-              background: 'white'
+              background: 'white',
+              cursor: 'pointer'
             }}
           >
             {categories.map(cat => (
@@ -177,7 +190,8 @@ export default function CoursesPage() {
               padding: '8px 16px',
               border: '1px solid #e5e7eb',
               borderRadius: '8px',
-              background: 'white'
+              background: 'white',
+              cursor: 'pointer'
             }}
           >
             {levels.map(level => (
@@ -239,10 +253,32 @@ export default function CoursesPage() {
               }}
             >
               {/* Course Thumbnail */}
-              <div style={{
-                height: '160px',
-                background: `linear-gradient(135deg, ${getRandomColor()}, ${getRandomColor()})`,
-                display: 'flex',
+              {course.thumbnail ? (
+                <img 
+                  src={course.thumbnail} 
+                  alt={course.title}
+                  style={{ 
+                    width: '100%', 
+                    height: '160px', 
+                    objectFit: 'cover' 
+                  }}
+                 onError={(e) => {
+  const img = e.target as HTMLImageElement;
+  img.style.display = 'none';
+  const parent = img.parentElement;
+  if (parent) {
+    const fallbackDiv = parent.querySelector('.thumbnail-fallback') as HTMLElement;
+    if (fallbackDiv) {
+      fallbackDiv.style.display = 'flex';
+    }
+  }
+}}
+                />
+              ) : null}
+              <div style={{ 
+                height: course.thumbnail ? '0px' : '160px', 
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                display: course.thumbnail ? 'none' : 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: '48px'
@@ -298,7 +334,7 @@ export default function CoursesPage() {
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                   <span style={{ fontSize: '14px', color: '#6b7280' }}>
-                    👨‍🏫 {course.instructor.name}
+                    👨‍🏫 {course.instructor?.name || 'Unknown'}
                   </span>
                   <span style={{ fontSize: '14px', color: '#f59e0b' }}>
                     ⭐ {course.rating || 'New'}
@@ -309,8 +345,8 @@ export default function CoursesPage() {
                   <span style={{ fontSize: '14px', color: '#6b7280' }}>
                     👥 {course.enrolledStudents?.length || 0} students
                   </span>
-                  <button
-                    onClick={() => handleEnroll(course._id)}
+                  <Link
+                    href={`/courses/${course._id}`}
                     style={{
                       padding: '8px 20px',
                       background: '#4f46e5',
@@ -319,11 +355,13 @@ export default function CoursesPage() {
                       borderRadius: '8px',
                       cursor: 'pointer',
                       fontWeight: '500',
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      textDecoration: 'none',
+                      display: 'inline-block'
                     }}
                   >
-                    Enroll Now
-                  </button>
+                    View Course
+                  </Link>
                 </div>
               </div>
             </div>
@@ -332,23 +370,4 @@ export default function CoursesPage() {
       )}
     </div>
   );
-}
-
-// Helper functions
-function getRandomColor() {
-  const colors = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#00f2fe', '#43e97b', '#fae3e3'];
-  return colors[Math.floor(Math.random() * colors.length)];
-}
-
-function getCategoryIcon(category: string): string {
-  const icons: { [key: string]: string } = {
-    'Programming': '💻',
-    'Design': '🎨',
-    'Business': '💼',
-    'Marketing': '📢',
-    'Data Science': '📊',
-    'AI/ML': '🤖',
-    'Other': '📚'
-  };
-  return icons[category] || '📚';
 }

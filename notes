@@ -1,0 +1,4 @@
+for upload(thumbnail) npm install multer
+npm install @types/multer --save-dev
+UUID for unique filenames npm install uuid
+npm install @types/uuid --save-dev
