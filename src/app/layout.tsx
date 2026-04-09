@@ -4,6 +4,7 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import './globals.css';
 import NavigationBar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
+import Script from 'next/script';
 
 export const metadata: Metadata = {
   title: 'LMS Platform - Professional Learning Management System',
@@ -17,7 +18,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body suppressHydrationWarning style={{ margin: 0, paddingTop: '76px' }}>
+      <head>
+        <Script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" />
+      </head>
+      <body suppressHydrationWarning>
         <NavigationBar />
         <main>{children}</main>
         <Footer />

@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 
 // Dynamically import the navbar with SSR disabled
-const Navbar = dynamic(() => import('../layout/NavbarContent'), {
+const Navbar = dynamic(() => import('./NavbarContent'), {
   ssr: false,
   loading: () => (
     <nav className="navbar-custom">

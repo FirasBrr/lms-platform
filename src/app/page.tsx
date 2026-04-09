@@ -13,23 +13,15 @@ const features = [
   { icon: '📱', title: 'Learn Anywhere', desc: 'Access courses on desktop, tablet, or mobile' },
 ];
 
-const courses = [
-  { title: 'Complete Web Development', instructor: 'Sarah Johnson', students: '12,345', rating: 4.9, level: 'Beginner', hours: '40' },
-  { title: 'Machine Learning Mastery', instructor: 'Dr. Michael Chen', students: '8,234', rating: 4.8, level: 'Advanced', hours: '35' },
-  { title: 'UI/UX Design Pro', instructor: 'Emma Rodriguez', students: '6,789', rating: 4.9, level: 'Intermediate', hours: '28' },
-  { title: 'Data Science Bootcamp', instructor: 'Prof. James Wilson', students: '9,876', rating: 4.9, level: 'Intermediate', hours: '45' },
-];
-
 export default function Home() {
-  const [mounted, setMounted] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    setMounted(true);
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      setUser(JSON.parse(userStr));
+    }
   }, []);
-
-  if (!mounted) {
-    return null;
-  }
 
   return (
     <>
@@ -48,26 +40,12 @@ export default function Home() {
                 Join 50,000+ students mastering new skills with our intelligent platform. Get personalized recommendations and 24/7 AI tutor support.
               </p>
               <div className="d-flex gap-3 mb-5">
-                <Link href="/register" className="btn btn-primary-custom">
-                  Start Learning Free
+                <Link href={user ? '/courses' : '/register'} className="btn btn-primary-custom">
+                  {user ? 'Browse Courses' : 'Start Learning Free'}
                 </Link>
                 <Link href="/courses" className="btn btn-outline-custom">
-                  Browse Courses
+                  Explore Courses
                 </Link>
-              </div>
-              <div className="d-flex gap-4">
-                <div>
-                  <div className="stat-number" style={{ fontSize: '32px' }}>50K+</div>
-                  <div className="text-muted small">Active Students</div>
-                </div>
-                <div>
-                  <div className="stat-number" style={{ fontSize: '32px' }}>500+</div>
-                  <div className="text-muted small">Expert Courses</div>
-                </div>
-                <div>
-                  <div className="stat-number" style={{ fontSize: '32px' }}>98%</div>
-                  <div className="text-muted small">Satisfaction Rate</div>
-                </div>
               </div>
             </Col>
             
@@ -126,85 +104,12 @@ export default function Home() {
         </Container>
       </section>
 
-      {/* Stats Section */}
-      <section className="section section-gray">
-        <Container>
-          <Row className="g-4">
-            <Col md={3}>
-              <div className="stat-card">
-                <div className="stat-number">50,000+</div>
-                <div className="stat-label">Active Students</div>
-              </div>
-            </Col>
-            <Col md={3}>
-              <div className="stat-card">
-                <div className="stat-number">500+</div>
-                <div className="stat-label">Expert Courses</div>
-              </div>
-            </Col>
-            <Col md={3}>
-              <div className="stat-card">
-                <div className="stat-number">100+</div>
-                <div className="stat-label">Expert Instructors</div>
-              </div>
-            </Col>
-            <Col md={3}>
-              <div className="stat-card">
-                <div className="stat-number">98%</div>
-                <div className="stat-label">Satisfaction Rate</div>
-              </div>
-            </Col>
-          </Row>
-        </Container>
-      </section>
-
-      {/* Popular Courses */}
-      <section className="section section-white">
-        <Container>
-          <div className="text-center mb-5">
-            <h2 className="display-4 fw-bold mb-3">Most Popular Courses</h2>
-            <p className="lead text-muted">Join thousands of students learning these top-rated courses</p>
-          </div>
-          
-          <Row className="g-4">
-            {courses.map((course, idx) => (
-              <Col md={6} lg={3} key={idx}>
-                <div className="course-card">
-                  <div className="course-image">
-                    <span className="course-badge">⭐ {course.rating}</span>
-                    <span style={{ fontSize: '48px' }}>📚</span>
-                  </div>
-                  <div className="course-content">
-                    <h5 className="course-title">{course.title}</h5>
-                    <p className="course-instructor">{course.instructor}</p>
-                    <div className="d-flex justify-content-between mb-3">
-                      <span className="text-muted small">👥 {course.students}</span>
-                      <span className="text-muted small">⏱️ {course.hours}h</span>
-                      <span className="text-muted small">{course.level}</span>
-                    </div>
-                    <Button variant="outline-primary" className="w-100 rounded-pill">
-                      Enroll Now →
-                    </Button>
-                  </div>
-                </div>
-              </Col>
-            ))}
-          </Row>
-          
-          <div className="text-center mt-5">
-            <Link href="/courses" className="btn btn-primary-custom">
-              Browse All Courses
-            </Link>
-          </div>
-        </Container>
-      </section>
-
       {/* CTA Section */}
       <section className="section" style={{ background: 'linear-gradient(135deg, #4f46e5, #06b6d4)', color: 'white' }}>
         <Container className="text-center">
           <h2 className="display-4 fw-bold mb-4">Ready to Start Learning?</h2>
           <p className="lead mb-4 opacity-90">Join our community and transform your career today</p>
-          <Link href="/register" className="btn btn-light rounded-pill px-5 py-3 fw-semibold">
+          <Link href={user ? '/courses' : '/register'} className="btn btn-light rounded-pill px-5 py-3 fw-semibold">
             Get Started Free
           </Link>
         </Container>

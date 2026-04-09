@@ -8,35 +8,23 @@ export async function POST(request: NextRequest) {
     const { email, password } = await request.json();
 
     if (!email || !password) {
-      return NextResponse.json(
-        { error: 'Email and password required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Email and password required' }, { status: 400 });
     }
 
     await connectDB();
 
     const user = await User.findOne({ email });
     if (!user) {
-      return NextResponse.json(
-        { error: 'Invalid credentials' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
     if (!user.isActive) {
-      return NextResponse.json(
-        { error: 'Account deactivated. Contact admin.' },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: 'Account deactivated. Contact admin.' }, { status: 403 });
     }
 
     const isValid = await comparePassword(password, user.password);
     if (!isValid) {
-      return NextResponse.json(
-        { error: 'Invalid credentials' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
     const token = signToken({
@@ -56,12 +44,8 @@ export async function POST(request: NextRequest) {
         role: user.role
       }
     });
-
   } catch (error) {
     console.error('Login error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

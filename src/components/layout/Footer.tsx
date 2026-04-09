@@ -1,7 +1,17 @@
+'use client';
+
 import { Container, Row, Col } from 'react-bootstrap';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 export default function Footer() {
+  const pathname = usePathname();
+
+  // DON'T show footer on dashboard pages
+  if (pathname?.startsWith('/dashboard')) {
+    return null;
+  }
+
   return (
     <footer className="footer">
       <Container>
@@ -13,7 +23,6 @@ export default function Footer() {
               <a href="#" className="text-muted"><i className="bi bi-twitter"></i></a>
               <a href="#" className="text-muted"><i className="bi bi-linkedin"></i></a>
               <a href="#" className="text-muted"><i className="bi bi-github"></i></a>
-              <a href="#" className="text-muted"><i className="bi bi-youtube"></i></a>
             </div>
           </Col>
           
@@ -48,7 +57,7 @@ export default function Footer() {
         <hr className="my-4" />
         
         <div className="text-center text-muted">
-          <small>&copy; 2024 LMS Platform. All rights reserved.</small>
+          <small>&copy; 2026 LMS Platform. All rights reserved.</small>
         </div>
       </Container>
     </footer>
