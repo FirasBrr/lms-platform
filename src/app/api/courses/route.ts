@@ -122,31 +122,65 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to update course' }, { status: 500 });
   }
 }
-
 export async function DELETE(request: NextRequest) {
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
+    
     if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
     }
     
     const payload = verifyToken(token);
-    if (!payload || payload.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden. Only admins can delete courses.' }, { status: 403 });
+    if (!payload) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
     }
     
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
+    
     if (!id) {
-      return NextResponse.json({ error: 'Course ID is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Course ID is required' },
+        { status: 400 }
+      );
     }
     
     await connectDB();
+    
+    const course = await Course.findById(id);
+    
+    if (!course) {
+      return NextResponse.json(
+        { error: 'Course not found' },
+        { status: 404 }
+      );
+    }
+    
+    // Check permissions: admin OR the instructor who created the course
+    const isAdmin = payload.role === 'admin';
+    const isOwner = course.instructor.toString() === payload.userId;
+    
+    if (!isAdmin && !isOwner) {
+      return NextResponse.json(
+        { error: 'Forbidden. Only the course instructor or admin can delete this course.' },
+        { status: 403 }
+      );
+    }
+    
     await Course.findByIdAndDelete(id);
     
     return NextResponse.json({ message: 'Course deleted successfully' });
   } catch (error) {
     console.error('Error deleting course:', error);
-    return NextResponse.json({ error: 'Failed to delete course' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to delete course' },
+      { status: 500 }
+    );
   }
 }

@@ -27,11 +27,17 @@ export default function CoursesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedLevel, setSelectedLevel] = useState('all');
+  const [user, setUser] = useState<any>(null);
+  const [enrolling, setEnrolling] = useState<string | null>(null);
 
   const categories = ['all', 'Programming', 'Design', 'Business', 'Marketing', 'Data Science', 'AI/ML'];
   const levels = ['all', 'Beginner', 'Intermediate', 'Advanced'];
 
   useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      setUser(JSON.parse(userStr));
+    }
     fetchCourses();
   }, [selectedCategory, selectedLevel]);
 
@@ -76,18 +82,17 @@ export default function CoursesPage() {
   };
 
   const handleEnroll = async (courseId: string) => {
-    const token = localStorage.getItem('token');
-    if (!token) {
+    if (!user) {
       router.push('/login');
       return;
     }
 
+    setEnrolling(courseId);
     try {
       const res = await fetch('/api/enroll', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ courseId })
       });
@@ -103,7 +108,13 @@ export default function CoursesPage() {
     } catch (error) {
       console.error('Error enrolling:', error);
       alert('Something went wrong');
+    } finally {
+      setEnrolling(null);
     }
+  };
+
+  const isEnrolled = (course: Course) => {
+    return user && course.enrolledStudents?.includes(user.id);
   };
 
   const getCategoryIcon = (category: string): string => {
@@ -262,29 +273,19 @@ export default function CoursesPage() {
                     height: '160px', 
                     objectFit: 'cover' 
                   }}
-                 onError={(e) => {
-  const img = e.target as HTMLImageElement;
-  img.style.display = 'none';
-  const parent = img.parentElement;
-  if (parent) {
-    const fallbackDiv = parent.querySelector('.thumbnail-fallback') as HTMLElement;
-    if (fallbackDiv) {
-      fallbackDiv.style.display = 'flex';
-    }
-  }
-}}
                 />
-              ) : null}
-              <div style={{ 
-                height: course.thumbnail ? '0px' : '160px', 
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                display: course.thumbnail ? 'none' : 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '48px'
-              }}>
-                {getCategoryIcon(course.category)}
-              </div>
+              ) : (
+                <div style={{ 
+                  height: '160px', 
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '48px'
+                }}>
+                  {getCategoryIcon(course.category)}
+                </div>
+              )}
 
               {/* Course Content */}
               <div style={{ padding: '20px' }}>
@@ -345,23 +346,43 @@ export default function CoursesPage() {
                   <span style={{ fontSize: '14px', color: '#6b7280' }}>
                     👥 {course.enrolledStudents?.length || 0} students
                   </span>
-                  <Link
-                    href={`/courses/${course._id}`}
-                    style={{
-                      padding: '8px 20px',
-                      background: '#4f46e5',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      fontWeight: '500',
-                      fontSize: '14px',
-                      textDecoration: 'none',
-                      display: 'inline-block'
-                    }}
-                  >
-                    View Course
-                  </Link>
+                  {isEnrolled(course) ? (
+                    <Link
+                      href={`/courses/${course._id}`}
+                      style={{
+                        padding: '8px 20px',
+                        background: '#10b981',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: '500',
+                        fontSize: '14px',
+                        textDecoration: 'none',
+                        display: 'inline-block'
+                      }}
+                    >
+                      Continue Learning →
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={() => handleEnroll(course._id)}
+                      disabled={enrolling === course._id}
+                      style={{
+                        padding: '8px 20px',
+                        background: '#4f46e5',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: enrolling === course._id ? 'not-allowed' : 'pointer',
+                        fontWeight: '500',
+                        fontSize: '14px',
+                        opacity: enrolling === course._id ? 0.7 : 1
+                      }}
+                    >
+                      {enrolling === course._id ? 'Enrolling...' : 'Enroll Now'}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

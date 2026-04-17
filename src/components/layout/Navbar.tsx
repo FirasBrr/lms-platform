@@ -14,7 +14,6 @@ export default function NavigationBar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // DON'T show navbar on dashboard pages
   if (pathname?.startsWith('/dashboard')) {
     return null;
   }
@@ -30,9 +29,16 @@ export default function NavigationBar() {
   if (pathname?.startsWith('/courses')) {
     return null;
   }
+  if (pathname?.startsWith('/my-courses')) {
+    return null;
+  }
+  if (pathname?.startsWith('/certificates')) {
+    return null;
+  }
+if (pathname?.startsWith('/profile')) {
+    return null;
+  }
 
-
-  // Rest of your navbar code...
   useEffect(() => {
     setMounted(true);
     const userStr = localStorage.getItem('user');

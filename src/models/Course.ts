@@ -41,7 +41,7 @@ const CourseSchema = new Schema({
   thumbnail: { 
     type: String, 
     default: '' 
-  },  // ADD THIS FIELD
+  },  
   category: { 
     type: String, 
     required: true,

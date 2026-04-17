@@ -17,6 +17,10 @@ const UserSchema = new Schema({
     required: [true, 'Password is required'],
     minlength: 6 
   },
+  bio: { 
+    type: String, 
+    default: '' 
+  },
   role: { 
     type: String, 
     enum: ['student', 'instructor', 'admin'], 
@@ -29,7 +33,8 @@ const UserSchema = new Schema({
   enrolledCourses: [{
     courseId: { type: Schema.Types.ObjectId, ref: 'Course' },
     enrolledAt: { type: Date, default: Date.now },
-    progress: { type: Number, default: 0 }
+    progress: { type: Number, default: 0 },
+    completedLessons: [{ type: String }]
   }],
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }

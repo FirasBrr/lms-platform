@@ -7,7 +7,6 @@ import { usePathname } from 'next/navigation';
 export default function Footer() {
   const pathname = usePathname();
 
-  // DON'T show footer on dashboard pages
   if (pathname?.startsWith('/dashboard')) {
     return null;
   }
@@ -21,6 +20,15 @@ if (pathname?.startsWith('/admin')) {
     return null;
   }
  if (pathname?.startsWith('/courses')) {
+    return null;
+  }
+    if (pathname?.startsWith('/my-courses')) {
+    return null;
+  }
+  if (pathname?.startsWith('/certificates')) {
+    return null;
+  }
+if (pathname?.startsWith('/profile')) {
     return null;
   }
 

@@ -29,6 +29,7 @@ export default function InstructorCoursesPage() {
   const [user, setUser] = useState<User | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -49,31 +50,62 @@ export default function InstructorCoursesPage() {
     fetchCourses(token);
   }, [router]);
 
- const fetchCourses = async (token: string) => {
-  try {
-    console.log('Fetching courses...');
-    const res = await fetch('/api/instructor/courses', {
-      headers: {
-        'Authorization': `Bearer ${token}`
+  const fetchCourses = async (token: string) => {
+    try {
+      console.log('Fetching courses...');
+      const res = await fetch('/api/instructor/courses', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      console.log('Response status:', res.status);
+      const data = await res.json();
+      console.log('Response data:', data);
+      
+      if (res.ok) {
+        setCourses(data.courses || []);
+        console.log('Courses count:', data.courses?.length);
+      } else {
+        console.error('Error:', data.error);
       }
-    });
-    
-    console.log('Response status:', res.status);
-    const data = await res.json();
-    console.log('Response data:', data);
-    
-    if (res.ok) {
-      setCourses(data.courses || []);
-      console.log('Courses count:', data.courses?.length);
-    } else {
-      console.error('Error:', data.error);
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error('Error fetching courses:', error);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
+
+  const handleDeleteCourse = async (courseId: string) => {
+    if (!confirm('Are you sure you want to delete this course? This action cannot be undone.')) {
+      return;
+    }
+
+    setDeleting(courseId);
+    const token = localStorage.getItem('token');
+
+    try {
+      const res = await fetch(`/api/courses?id=${courseId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (res.ok) {
+        setCourses(courses.filter(course => course._id !== courseId));
+        alert('Course deleted successfully');
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to delete course');
+      }
+    } catch (error) {
+      console.error('Error deleting course:', error);
+      alert('Something went wrong');
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { bg: string; color: string; text: string }> = {
@@ -116,7 +148,7 @@ export default function InstructorCoursesPage() {
             <h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px' }}>
               My Courses
             </h1>
-            <p style={{ color: '#6b7280' }}>Manage all your courses</p>
+            <p style={{ color: '#64748b' }}>Manage all your courses</p>
           </div>
           <Link 
             href="/instructor/courses/create"
@@ -141,11 +173,11 @@ export default function InstructorCoursesPage() {
             padding: '60px', 
             background: 'white', 
             borderRadius: '16px', 
-            border: '1px solid #e5e7eb' 
+            border: '1px solid #e2e8f0' 
           }}>
             <div style={{ fontSize: '48px', marginBottom: '16px' }}>📚</div>
-            <h3 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px' }}>No courses yet</h3>
-            <p style={{ color: '#6b7280', marginBottom: '24px' }}>Create your first course and start teaching!</p>
+            <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1e293b', marginBottom: '8px' }}>No courses yet</h3>
+            <p style={{ color: '#64748b', marginBottom: '24px' }}>Create your first course and start teaching!</p>
             <Link 
               href="/instructor/courses/create"
               style={{ 
@@ -165,22 +197,22 @@ export default function InstructorCoursesPage() {
               <div key={course._id} style={{ 
                 background: 'white', 
                 borderRadius: '12px', 
-                border: '1px solid #e5e7eb',
+                border: '1px solid #e2e8f0',
                 padding: '20px',
                 transition: 'transform 0.2s, box-shadow 0.2s'
               }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px', flexWrap: 'wrap' }}>
-                      <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0 }}>{course.title}</h2>
+                      <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, color: '#1e293b' }}>{course.title}</h2>
                       {getStatusBadge(course.status)}
                     </div>
-                    <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '12px' }}>
+                    <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '12px' }}>
                       {course.description.length > 150 
                         ? course.description.substring(0, 150) + '...' 
                         : course.description}
                     </p>
-                    <div style={{ display: 'flex', gap: '16px', fontSize: '13px', color: '#6b7280', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: '16px', fontSize: '13px', color: '#64748b', flexWrap: 'wrap' }}>
                       <span>📚 {course.category}</span>
                       <span>📊 {course.level}</span>
                       <span>👥 {course.enrolledStudents?.length || 0} students</span>
@@ -188,7 +220,7 @@ export default function InstructorCoursesPage() {
                       <span>📅 {new Date(course.createdAt).toLocaleDateString()}</span>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                     <Link 
                       href={`/instructor/courses/${course._id}/edit`}
                       style={{ 
@@ -208,8 +240,8 @@ export default function InstructorCoursesPage() {
                       style={{ 
                         padding: '6px 16px', 
                         background: 'white', 
-                        border: '1px solid #e5e7eb',
-                        color: '#374151', 
+                        border: '1px solid #e2e8f0',
+                        color: '#475569', 
                         borderRadius: '6px',
                         textDecoration: 'none',
                         fontSize: '14px'
@@ -217,6 +249,22 @@ export default function InstructorCoursesPage() {
                     >
                       View
                     </Link>
+                    <button
+                      onClick={() => handleDeleteCourse(course._id)}
+                      disabled={deleting === course._id}
+                      style={{ 
+                        padding: '6px 16px', 
+                        background: '#fee2e2', 
+                        color: '#dc2626', 
+                        border: 'none', 
+                        borderRadius: '6px',
+                        cursor: deleting === course._id ? 'not-allowed' : 'pointer',
+                        fontSize: '14px',
+                        opacity: deleting === course._id ? 0.7 : 1
+                      }}
+                    >
+                      {deleting === course._id ? 'Deleting...' : 'Delete'}
+                    </button>
                   </div>
                 </div>
               </div>

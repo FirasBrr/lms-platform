@@ -42,10 +42,8 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
       return [
         { href: '/dashboard/student', icon: '🏠', label: 'Overview' },
         { href: '/my-courses', icon: '📚', label: 'My Courses' },
-        { href: '/my-progress', icon: '📈', label: 'Progress' },
         { href: '/certificates', icon: '🎓', label: 'Certificates' },
         { href: '/profile', icon: '👤', label: 'Profile' },
-        { href: '/settings', icon: '⚙️', label: 'Settings' },
       ];
     }
 
@@ -56,7 +54,6 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
         { href: '/instructor/courses/create', icon: '➕', label: 'Create Course' },
         { href: '/instructor/students', icon: '👥', label: 'Students' },
         { href: '/profile', icon: '👤', label: 'Profile' },
-        { href: '/settings', icon: '⚙️', label: 'Settings' },
       ];
     }
 
@@ -68,7 +65,6 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
         { href: '/admin/pending', icon: '⏳', label: 'Pending Reviews' },
         { href: '/admin/analytics', icon: '📊', label: 'Analytics' },
         { href: '/profile', icon: '👤', label: 'Profile' },
-        { href: '/settings', icon: '⚙️', label: 'Settings' },
       ];
     }
 
