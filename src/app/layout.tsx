@@ -5,6 +5,7 @@ import './globals.css';
 import NavigationBar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
 import Script from 'next/script';
+import ClientLayout from '@/components/ClientLayout';
 
 export const metadata: Metadata = {
   title: 'LMS Platform - Professional Learning Management System',
@@ -25,6 +26,7 @@ export default function RootLayout({
         <NavigationBar />
         <main>{children}</main>
         <Footer />
+        <ClientLayout />
       </body>
     </html>
   );
