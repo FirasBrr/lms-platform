@@ -47,6 +47,7 @@ export default function CourseDetailsPage() {
   const [lessonCompleted, setLessonCompleted] = useState(false);
   const [updating, setUpdating] = useState<string | null>(null);
   const [generatingCert, setGeneratingCert] = useState(false);
+  const [certificateGenerated, setCertificateGenerated] = useState(false);
 
   useEffect(() => {
     const userStr = localStorage.getItem('user');
@@ -54,6 +55,7 @@ export default function CourseDetailsPage() {
       setUser(JSON.parse(userStr));
     }
     fetchCourse();
+    checkExistingCertificate();
   }, [params.id]);
 
   const fetchCourse = async () => {
@@ -93,15 +95,30 @@ export default function CourseDetailsPage() {
     }
   };
 
+  const checkExistingCertificate = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/certificates', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok && data.certificates) {
+        const hasCert = data.certificates.some(
+          (cert: any) => cert.courseId?._id === params.id || cert.courseTitle === course?.title
+        );
+        setCertificateGenerated(hasCert);
+      }
+    } catch (error) {
+      console.error('Error checking certificate:', error);
+    }
+  };
+
   const generateCertificate = async () => {
     if (generatingCert) return;
     
     setGeneratingCert(true);
     try {
       const token = localStorage.getItem('token');
-      
-      // Add a small delay to ensure database is updated
-      await new Promise(resolve => setTimeout(resolve, 1000));
       
       const res = await fetch('/api/certificates', {
         method: 'POST',
@@ -115,19 +132,17 @@ export default function CourseDetailsPage() {
       const data = await res.json();
       
       if (res.ok) {
-        console.log('✅ Certificate generated successfully for course:', params.id);
-        return true;
+        setCertificateGenerated(true);
+        alert('🎓 Certificate generated successfully! You can download it from the Certificates page.');
+      } else if (data.error === 'Certificate already exists') {
+        setCertificateGenerated(true);
+        alert('Certificate already exists for this course.');
       } else {
-        if (data.error === 'Certificate already exists') {
-          console.log('Certificate already exists for this course');
-          return true;
-        }
-        console.error('❌ Error generating certificate:', data.error);
-        return false;
+        alert('Failed to generate certificate: ' + data.error);
       }
     } catch (error) {
       console.error('Error generating certificate:', error);
-      return false;
+      alert('Something went wrong');
     } finally {
       setGeneratingCert(false);
     }
@@ -161,18 +176,12 @@ export default function CourseDetailsPage() {
         setCompletedLessons(data.completedLessons);
         setProgress(data.progress);
         
-        // Check if course is now completed (100% progress)
         if (data.progress === 100) {
-          console.log('🎉 Course completed! Generating certificate...');
-          // Add a small delay to ensure database consistency
+          // Auto-generate certificate
           setTimeout(async () => {
-            const success = await generateCertificate();
-            if (success) {
-              alert('🎉 Congratulations! You have completed this course! 🎓\n\nYour certificate has been generated. You can download it from the Certificates page.');
-            } else {
-              alert('⚠️ Course completed but certificate generation failed. Please contact support.');
-            }
+            await generateCertificate();
           }, 500);
+          alert('🎉 Congratulations! You have completed this course! 🎓');
         }
       } else {
         alert(data.error || 'Failed to update progress');
@@ -195,7 +204,6 @@ export default function CourseDetailsPage() {
     await fetchProgress();
     setLessonCompleted(true);
     
-    // Check if progress is now 100%
     if (progress === 100) {
       await generateCertificate();
     }
@@ -207,7 +215,6 @@ export default function CourseDetailsPage() {
       return;
     }
 
-    // Only students can enroll
     if (user.role !== 'student') {
       alert('Only students can enroll in courses');
       return;
@@ -260,13 +267,11 @@ export default function CourseDetailsPage() {
 
   const totalLessons = course.lessons?.length || 0;
   const completedCount = completedLessons.length;
-
-  // Check if user is a student (not instructor or admin)
   const isStudent = user?.role === 'student';
+  const showCertificateButton = progress === 100 && !certificateGenerated;
 
   return (
     <>
-      {/* Back Button */}
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px 24px 0 24px' }}>
         <button
           onClick={() => router.back()}
@@ -363,7 +368,7 @@ export default function CourseDetailsPage() {
           )}
         </div>
 
-        {/* Enrollment Button - ONLY for students who are NOT enrolled */}
+        {/* Enrollment Button */}
         {!isEnrolled && user && isStudent && (
           <div style={{ 
             background: 'white', 
@@ -396,7 +401,7 @@ export default function CourseDetailsPage() {
           </div>
         )}
 
-        {/* Message for instructors/admins viewing the course */}
+        {/* Message for instructors/admins */}
         {!isEnrolled && user && !isStudent && (
           <div style={{ 
             background: '#fef3c7', 
@@ -408,11 +413,12 @@ export default function CourseDetailsPage() {
           }}>
             <p style={{ color: '#92400e' }}>
               👁️ You are viewing this course as {user.role === 'instructor' ? 'an instructor' : 'an admin'}. 
-{user.role === 'instructor' && course.instructor?.email === user.email && ' This is your course.'}            </p>
+              {user.role === 'instructor' && course.instructor?.email === user.email && ' This is your course.'}
+            </p>
           </div>
         )}
 
-        {/* Progress Bar for enrolled users */}
+        {/* Progress Bar */}
         {isEnrolled && (
           <div style={{ 
             background: 'white', 
@@ -437,29 +443,38 @@ export default function CourseDetailsPage() {
             <div style={{ marginTop: '12px', fontSize: '14px', color: '#64748b' }}>
               {completedCount} of {totalLessons} lessons completed
             </div>
-            {progress === 100 && (
-              <div style={{ 
-                marginTop: '16px', 
-                padding: '12px 16px', 
-                background: '#d1fae5', 
-                borderRadius: '10px', 
-                color: '#065f46',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: '12px'
-              }}>
-                <span>🎓 Congratulations! You have completed this course!</span>
-                <Link 
-                  href="/certificates" 
-                  style={{ 
-                    color: '#4f46e5', 
-                    textDecoration: 'underline',
-                    fontWeight: '500'
+            
+            {/* Certificate Button - Shows when course is completed */}
+            {showCertificateButton && (
+              <div style={{ marginTop: '16px' }}>
+                <button
+                  onClick={generateCertificate}
+                  disabled={generatingCert}
+                  style={{
+                    padding: '10px 20px',
+                    background: '#4f46e5',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '10px',
+                    cursor: generatingCert ? 'not-allowed' : 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    opacity: generatingCert ? 0.7 : 1
                   }}
                 >
-                  View your certificate →
+                  {generatingCert ? 'Generating...' : '🎓 Generate Certificate'}
+                </button>
+              </div>
+            )}
+            
+            {progress === 100 && certificateGenerated && (
+              <div style={{ marginTop: '16px', padding: '12px 16px', background: '#d1fae5', borderRadius: '10px', color: '#065f46', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                <span>🎓 Certificate generated! You can download it from the Certificates page.</span>
+                <Link href="/certificates" style={{ color: '#4f46e5', textDecoration: 'underline', fontWeight: '500' }}>
+                  View Certificate →
                 </Link>
               </div>
             )}
@@ -545,7 +560,6 @@ export default function CourseDetailsPage() {
 
           {/* Right Column - Sidebar */}
           <div>
-            {/* What You'll Learn */}
             {course.whatYouWillLearn && course.whatYouWillLearn.length > 0 && (
               <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '24px', marginBottom: '24px' }}>
                 <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1e293b', marginBottom: '16px' }}>What You'll Learn</h3>
@@ -559,7 +573,6 @@ export default function CourseDetailsPage() {
               </div>
             )}
 
-            {/* Requirements */}
             {course.requirements && course.requirements.length > 0 && (
               <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '24px', marginBottom: '24px' }}>
                 <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1e293b', marginBottom: '16px' }}>Requirements</h3>
@@ -573,7 +586,6 @@ export default function CourseDetailsPage() {
               </div>
             )}
 
-            {/* Instructor Card */}
             <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '24px', position: 'sticky', top: '100px' }}>
               <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1e293b', marginBottom: '16px' }}>About the Instructor</h3>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
@@ -602,13 +614,11 @@ export default function CourseDetailsPage() {
           </div>
         </div>
 
-        {/* Reviews Section - Only show for enrolled students */}
         {isEnrolled && (
           <CourseReviews courseId={course._id} user={user} />
         )}
       </div>
 
-      {/* Lesson Viewer Modal */}
       {selectedLesson && (
         <LessonViewer
           lesson={selectedLesson}
@@ -620,7 +630,6 @@ export default function CourseDetailsPage() {
         />
       )}
 
-      {/* AI Chatbot */}
       <Chatbot 
         courseContext={`Course: ${course.title}. Description: ${course.description}`}
         courseTitle={course.title}

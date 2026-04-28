@@ -69,19 +69,40 @@ export default function CertificatesPage() {
   };
 
   const downloadCertificate = async (certificateId: string) => {
-    setDownloading(certificateId);
-    try {
-      const token = localStorage.getItem('token');
-      // Open download in new tab with token in URL
-      window.open(`/api/certificates/${certificateId}/download?token=${token}`, '_blank');
-    } catch (error) {
-      console.error('Error downloading certificate:', error);
-      alert('Failed to download certificate');
-    } finally {
-      setDownloading(null);
+  setDownloading(certificateId);
+  try {
+    const token = localStorage.getItem('token');
+    
+    const response = await fetch(`/api/certificates/${certificateId}/download`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Download failed');
     }
-  };
-
+    
+    // Get the blob from response
+    const blob = await response.blob();
+    
+    // Create a download link
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `certificate-${certificateId}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    
+  } catch (error) {
+    console.error('Error downloading certificate:', error);
+    alert('Failed to download certificate');
+  } finally {
+    setDownloading(null);
+  }
+};
   if (loading) {
     return (
       <DashboardLayout user={user}>
