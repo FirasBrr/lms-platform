@@ -3,38 +3,25 @@ import { connectDB } from '@/lib/mongodb';
 import User from '@/models/User';
 import Course from '@/models/Course';
 import Certificate from '@/models/Certificate';
-import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET!;
-
-function getUserIdFromToken(token: string): string | null {
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
-    return decoded.userId;
-  } catch {
-    return null;
-  }
-}
+import { verifyToken } from '@/lib/auth';
 
 // GET - Get user's certificates
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
+    const token = request.headers.get('authorization')?.replace('Bearer ', '');
     
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const userId = getUserIdFromToken(token);
-    if (!userId) {
+    const payload = verifyToken(token);
+    if (!payload) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
     
     await connectDB();
     
-    const certificates = await Certificate.find({ userId })
+    const certificates = await Certificate.find({ userId: payload.userId })
       .populate('courseId', 'title thumbnail')
       .sort({ issueDate: -1 });
     
@@ -48,15 +35,14 @@ export async function GET(request: NextRequest) {
 // POST - Generate certificate for completed course
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
+    const token = request.headers.get('authorization')?.replace('Bearer ', '');
     
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const userId = getUserIdFromToken(token);
-    if (!userId) {
+    const payload = verifyToken(token);
+    if (!payload) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
     
@@ -69,7 +55,7 @@ export async function POST(request: NextRequest) {
     await connectDB();
     
     // Get user and course
-    const user = await User.findById(userId);
+    const user = await User.findById(payload.userId);
     const course = await Course.findById(courseId);
     
     if (!course) {
@@ -90,8 +76,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Course not completed yet' }, { status: 400 });
     }
     
-    // Check if certificate already exists
-    const existingCert = await Certificate.findOne({ userId, courseId });
+    // Check if certificate already exists for this course
+    const existingCert = await Certificate.findOne({ 
+      userId: payload.userId, 
+      courseId 
+    });
+    
     if (existingCert) {
       return NextResponse.json({ 
         certificate: existingCert,
@@ -104,13 +94,15 @@ export async function POST(request: NextRequest) {
     
     // Create certificate
     const certificate = await Certificate.create({
-      userId,
+      userId: payload.userId,
       courseId,
       courseTitle: course.title,
       userName: user.name,
       certificateId,
       issueDate: new Date()
     });
+    
+    console.log('Certificate created successfully for course:', course.title);
     
     return NextResponse.json({ 
       certificate,

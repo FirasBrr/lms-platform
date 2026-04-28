@@ -51,7 +51,12 @@ export default function CertificatesPage() {
 
   const fetchCertificates = async () => {
     try {
-      const res = await fetch('/api/certificates');
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/certificates', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       const data = await res.json();
       if (res.ok) {
         setCertificates(data.certificates || []);
@@ -66,7 +71,9 @@ export default function CertificatesPage() {
   const downloadCertificate = async (certificateId: string) => {
     setDownloading(certificateId);
     try {
-      window.open(`/api/certificates/${certificateId}/download`, '_blank');
+      const token = localStorage.getItem('token');
+      // Open download in new tab with token in URL
+      window.open(`/api/certificates/${certificateId}/download?token=${token}`, '_blank');
     } catch (error) {
       console.error('Error downloading certificate:', error);
       alert('Failed to download certificate');
@@ -80,6 +87,7 @@ export default function CertificatesPage() {
       <DashboardLayout user={user}>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
           <div style={{ width: '48px', height: '48px', border: '3px solid #e2e8f0', borderTopColor: '#4f46e5', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       </DashboardLayout>
     );

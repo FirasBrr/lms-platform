@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import LessonViewer from '@/components/LessonViewer';
 import Chatbot from '@/components/Chatbot';
+import CourseReviews from '@/components/CourseReviews';
 
 interface Course {
   _id: string;
@@ -44,6 +45,8 @@ export default function CourseDetailsPage() {
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [lessonCompleted, setLessonCompleted] = useState(false);
+  const [updating, setUpdating] = useState<string | null>(null);
+  const [generatingCert, setGeneratingCert] = useState(false);
 
   useEffect(() => {
     const userStr = localStorage.getItem('user');
@@ -90,6 +93,98 @@ export default function CourseDetailsPage() {
     }
   };
 
+  const generateCertificate = async () => {
+    if (generatingCert) return;
+    
+    setGeneratingCert(true);
+    try {
+      const token = localStorage.getItem('token');
+      
+      // Add a small delay to ensure database is updated
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const res = await fetch('/api/certificates', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ courseId: params.id })
+      });
+
+      const data = await res.json();
+      
+      if (res.ok) {
+        console.log('✅ Certificate generated successfully for course:', params.id);
+        return true;
+      } else {
+        if (data.error === 'Certificate already exists') {
+          console.log('Certificate already exists for this course');
+          return true;
+        }
+        console.error('❌ Error generating certificate:', data.error);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error generating certificate:', error);
+      return false;
+    } finally {
+      setGeneratingCert(false);
+    }
+  };
+
+  const toggleLessonComplete = async (lessonId: string, lessonTitle: string) => {
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    setUpdating(lessonId);
+    const isCurrentlyComplete = completedLessons.includes(lessonTitle);
+    
+    try {
+      const res = await fetch('/api/progress', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          courseId: params.id,
+          lessonId: lessonTitle,
+          completed: !isCurrentlyComplete
+        })
+      });
+
+      const data = await res.json();
+      
+      if (res.ok) {
+        setCompletedLessons(data.completedLessons);
+        setProgress(data.progress);
+        
+        // Check if course is now completed (100% progress)
+        if (data.progress === 100) {
+          console.log('🎉 Course completed! Generating certificate...');
+          // Add a small delay to ensure database consistency
+          setTimeout(async () => {
+            const success = await generateCertificate();
+            if (success) {
+              alert('🎉 Congratulations! You have completed this course! 🎓\n\nYour certificate has been generated. You can download it from the Certificates page.');
+            } else {
+              alert('⚠️ Course completed but certificate generation failed. Please contact support.');
+            }
+          }, 500);
+        }
+      } else {
+        alert(data.error || 'Failed to update progress');
+      }
+    } catch (error) {
+      console.error('Error updating progress:', error);
+      alert('Something went wrong');
+    } finally {
+      setUpdating(null);
+    }
+  };
+
   const handleOpenLesson = (lesson: Lesson) => {
     setSelectedLesson(lesson);
     const isCompleted = completedLessons.includes(lesson.title);
@@ -99,12 +194,22 @@ export default function CourseDetailsPage() {
   const handleLessonComplete = async () => {
     await fetchProgress();
     setLessonCompleted(true);
-    await fetchCourse();
+    
+    // Check if progress is now 100%
+    if (progress === 100) {
+      await generateCertificate();
+    }
   };
 
   const handleEnroll = async () => {
     if (!user) {
       router.push('/login');
+      return;
+    }
+
+    // Only students can enroll
+    if (user.role !== 'student') {
+      alert('Only students can enroll in courses');
       return;
     }
 
@@ -155,6 +260,9 @@ export default function CourseDetailsPage() {
 
   const totalLessons = course.lessons?.length || 0;
   const completedCount = completedLessons.length;
+
+  // Check if user is a student (not instructor or admin)
+  const isStudent = user?.role === 'student';
 
   return (
     <>
@@ -255,8 +363,8 @@ export default function CourseDetailsPage() {
           )}
         </div>
 
-        {/* Enrollment Button for non-enrolled users */}
-        {!isEnrolled && user && (
+        {/* Enrollment Button - ONLY for students who are NOT enrolled */}
+        {!isEnrolled && user && isStudent && (
           <div style={{ 
             background: 'white', 
             borderRadius: '16px', 
@@ -285,6 +393,22 @@ export default function CourseDetailsPage() {
             >
               Enroll Now - Free
             </button>
+          </div>
+        )}
+
+        {/* Message for instructors/admins viewing the course */}
+        {!isEnrolled && user && !isStudent && (
+          <div style={{ 
+            background: '#fef3c7', 
+            borderRadius: '16px', 
+            border: '1px solid #fde68a', 
+            padding: '16px 24px',
+            textAlign: 'center',
+            marginBottom: '32px'
+          }}>
+            <p style={{ color: '#92400e' }}>
+              👁️ You are viewing this course as {user.role === 'instructor' ? 'an instructor' : 'an admin'}. 
+{user.role === 'instructor' && course.instructor?.email === user.email && ' This is your course.'}            </p>
           </div>
         )}
 
@@ -477,6 +601,11 @@ export default function CourseDetailsPage() {
             </div>
           </div>
         </div>
+
+        {/* Reviews Section - Only show for enrolled students */}
+        {isEnrolled && (
+          <CourseReviews courseId={course._id} user={user} />
+        )}
       </div>
 
       {/* Lesson Viewer Modal */}

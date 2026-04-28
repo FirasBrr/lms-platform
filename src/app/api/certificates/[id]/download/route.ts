@@ -1,34 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import Certificate from '@/models/Certificate';
-import { cookies } from 'next/headers';
-import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET!;
-
-function getUserIdFromToken(token: string): string | null {
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
-    return decoded.userId;
-  } catch {
-    return null;
-  }
-}
+import { verifyToken } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
+    const token = request.headers.get('authorization')?.replace('Bearer ', '');
     
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const userId = getUserIdFromToken(token);
-    if (!userId) {
+    const payload = verifyToken(token);
+    if (!payload) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
     
@@ -44,7 +31,7 @@ export async function GET(
     }
     
     // Verify ownership
-    if (certificate.userId._id.toString() !== userId) {
+    if (certificate.userId._id.toString() !== payload.userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
     
